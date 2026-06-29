@@ -1,0 +1,11 @@
+---
+- name: Install Nginx on web servers
+  hosts: webservers
+  become: yes
+
+  tasks:
+    - name: Install nginx
+      dnf:
+        name: nginx
+        state: present
+        update_cache: yes
