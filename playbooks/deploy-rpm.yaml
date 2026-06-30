@@ -24,3 +24,8 @@
         src: "{{ rpm_file.path }}"
         dest: /tmp/myapp.rpm
 
+    - name: Install/Upgrade RPM on target server     ← THIS task must exist
+      dnf:
+        name: /tmp/myapp.rpm
+        state: latest
+        disable_gpg_check: yes   
