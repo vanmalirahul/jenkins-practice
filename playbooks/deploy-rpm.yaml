@@ -1,5 +1,5 @@
 ---
-- name: Deploy custom RPM package - always latest
+- name: Deploy custom RPM package - remove old, install new
   hosts: webservers
   become: yes
 
@@ -20,18 +20,24 @@
       debug:
         msg: "Currently installed: {{ current_version.stdout | default('Not installed') }}"
 
-    - name: Install/Upgrade to latest RPM (only if file changed)
-      command: dnf install -y /tmp/myapp.rpm
-      register: dnf_output
-      when: copy_result.changed
-      changed_when: "'Nothing to do' not in dnf_output.stdout"
+    - name: Remove existing myapp RPM if installed
+      dnf:
+        name: myapp
+        state: absent
+      when: current_version.rc == 0
 
-    - name: Verify installed version
+    - name: Install fresh RPM from /tmp
+      dnf:
+        name: /tmp/myapp.rpm
+        state: present
+        disable_gpg_check: yes
+
+    - name: Verify newly installed version
       command: rpm -q myapp
       register: new_version
       changed_when: false
 
-    - name: Show installed version
+    - name: Show newly installed version
       debug:
         msg: "✅ Now installed: {{ new_version.stdout }}"
 
