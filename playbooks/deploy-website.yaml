@@ -13,28 +13,48 @@
         name: nginx
         state: present
 
-    - name: Ensure /var/www/html directory exists
+    - name: Install httpd
+      dnf:
+        name: httpd
+        state: present  
+    - name: Ensure nginx default web root exists
       file:
-        path: /var/www/html
+        path: /usr/share/nginx/html
         state: directory
-        owner: www-data
-        group: www-data
+        owner: nginx
+        group: nginx
         mode: '0755'
 
     - name: Deploy custom index.html from template
       template:
         src: ../templates/index.html.j2
-        dest: /var/www/html/index.html
-        owner: www-data
-        group: www-data
+        dest: /usr/share/nginx/html/index.html
+        owner: nginx
+        group: nginx
         mode: '0644'
       notify: Restart nginx
 
-    - name: Ensure nginx is running
+    - name: Ensure nginx is running and enabled
       service:
         name: nginx
         state: started
         enabled: yes
+
+    - name: Allow HTTP through firewalld
+      firewalld:
+        service: http
+        permanent: yes
+        state: enabled
+        immediate: yes
+
+    - name: Ensure SELinux allows nginx to serve content
+      sefcontext:
+        target: '/usr/share/nginx/html(/.*)?'
+        setype: httpd_sys_content_t
+        state: present
+
+    - name: Apply SELinux context
+      command: restorecon -Rv /usr/share/nginx/html
 
   handlers:
     - name: Restart nginx
