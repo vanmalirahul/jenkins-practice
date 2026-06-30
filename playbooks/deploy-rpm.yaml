@@ -1,5 +1,5 @@
 ---
-- name: Deploy custom RPM package with fixed artifact name
+- name: Deploy custom RPM package - always latest
   hosts: webservers
   become: yes
 
@@ -8,6 +8,7 @@
       copy:
         src: "{{ playbook_dir }}/../myapp-latest.rpm"
         dest: /tmp/myapp.rpm
+      register: copy_result
 
     - name: Check currently installed version
       command: rpm -q myapp
@@ -19,21 +20,18 @@
       debug:
         msg: "Currently installed: {{ current_version.stdout | default('Not installed') }}"
 
-    - name: Install or upgrade RPM on target server
-      command: dnf upgrade -y /tmp/myapp.rpm
+    - name: Install/Upgrade to latest RPM (only if file changed)
+      command: dnf install -y /tmp/myapp.rpm
       register: dnf_output
+      when: copy_result.changed
       changed_when: "'Nothing to do' not in dnf_output.stdout"
 
-    - name: Show dnf output
-      debug:
-        msg: "{{ dnf_output.stdout_lines }}"
-
-    - name: Verify new version installed
+    - name: Verify installed version
       command: rpm -q myapp
       register: new_version
       changed_when: false
 
-    - name: Show newly installed version
+    - name: Show installed version
       debug:
         msg: "✅ Now installed: {{ new_version.stdout }}"
 
