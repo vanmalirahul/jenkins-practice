@@ -10,11 +10,16 @@
   tasks:
     - name: Install nginx
       dnf:
-        name: "{ item }"
+        name: nginx
         state: present
-      with_item:
-        - nginx
-        - httpd
+
+    - name: Ensure /var/www/html directory exists
+      file:
+        path: /var/www/html
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
 
     - name: Deploy custom index.html from template
       template:
