@@ -41,6 +41,17 @@
         state: started
         enabled: yes
 
+    - name: Ensure firewalld is installed
+      dnf:
+        name: firewalld
+        state: present
+
+    - name: Ensure firewalld is running and enabled
+      service:
+        name: firewalld
+        state: started
+        enabled: yes
+
     - name: Allow HTTP through firewalld
       command: firewall-cmd --permanent --add-service=http
       changed_when: false
