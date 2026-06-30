@@ -9,9 +9,12 @@
 
   tasks:
     - name: Install nginx
-      package:
-        name: nginx
+      dnf:
+        name: "{ item }"
         state: present
+      with_item:
+        - nginx
+        - httpd
 
     - name: Deploy custom index.html from template
       template:
