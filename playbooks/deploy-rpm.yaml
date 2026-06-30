@@ -5,28 +5,22 @@
 
   tasks:
     - name: Find the built RPM file locally
-      find:
+      ansible.builtin.find:
         paths: "{{ playbook_dir }}/.."
         patterns: "myapp-*.rpm"
       delegate_to: localhost
-      register: rpm_file
+      register: rpm_file_search
+
+    - name: Sort and pick the newest RPM
+      ansible.builtin.set_fact:
+        rpm_file: "{{ (rpm_file_search.files | sort(attribute='mtime', reverse=true))[0] }}"
+
+    - name: Show RPM file found
+      ansible.builtin.debug:
+        msg: "Deploying: {{ rpm_file.path }}"
 
     - name: Copy RPM to target server
-      copy:
-        src: "{{ rpm_file.files[0].path }}"
+      ansible.builtin.copy:
+        src: "{{ rpm_file.path }}"
         dest: /tmp/myapp.rpm
-
-    - name: Install RPM on target server
-      dnf:
-        name: /tmp/myapp.rpm
-        state: present
-        disable_gpg_check: yes
-
-    - name: Run the installed application
-      command: /usr/local/bin/myapp.sh
-      register: app_output
-
-    - name: Show application output
-      debug:
-        msg: "{{ app_output.stdout_lines }}"
 
