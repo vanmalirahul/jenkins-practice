@@ -1,6 +1,31 @@
-- name: Find the built RPM file locally
-  find:
-    paths: "{{ playbook_dir }}/.."
-    patterns: "myapp-*.rpm"
-  delegate_to: localhost
-  register: rpm_file
+---
+- name: Deploy custom RPM package
+  hosts: webservers
+  become: yes
+
+  tasks:
+    - name: Find the built RPM file locally
+      find:
+        paths: "{{ playbook_dir }}/.."
+        patterns: "myapp-*.rpm"
+      delegate_to: localhost
+      register: rpm_file
+
+    - name: Copy RPM to target server
+      copy:
+        src: "{{ rpm_file.files[0].path }}"
+        dest: /tmp/myapp.rpm
+
+    - name: Install RPM on target server
+      dnf:
+        name: /tmp/myapp.rpm
+        state: present
+        disable_gpg_check: yes
+
+    - name: Run the installed application
+      command: /usr/local/bin/myapp.sh
+      register: app_output
+
+    - name: Show application output
+      debug:
+        msg: "{{ app_output.stdout_lines }}"
