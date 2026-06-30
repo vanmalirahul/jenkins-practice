@@ -1,6 +1,6 @@
 Name:           myapp
-Version:        1.0
-Release:        1%{?dist}
+Version:        %{app_version}
+Release:        %{app_release}%{?dist}
 Summary:        My First Custom RPM Package
 License:        MIT
 BuildArch:      noarch
@@ -20,5 +20,5 @@ cp %{_sourcedir}/usr/local/bin/myapp.sh %{buildroot}/usr/local/bin/myapp.sh
 chmod +x /usr/local/bin/myapp.sh
 
 %changelog
-* Mon Jun 30 2026 Rahul Vanmali <rahul@example.com> - 1.0-1
-- Initial RPM build
+* Mon Jun 30 2026 Rahul Vanmali <rahul@example.com> - %{app_version}-%{app_release}
+- Build %{app_version}
