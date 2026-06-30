@@ -1,31 +1,46 @@
 ---
-- name: Deploy custom RPM package
+- name: Deploy custom RPM package with fixed artifact name
   hosts: webservers
   become: yes
 
   tasks:
-    - name: Find the built RPM file locally
-      ansible.builtin.find:
-        paths: "{{ playbook_dir }}/.."
-        patterns: "myapp-*.rpm"
-      delegate_to: localhost
-      register: rpm_file_search
-
-    - name: Sort and pick the newest RPM
-      ansible.builtin.set_fact:
-        rpm_file: "{{ (rpm_file_search.files | sort(attribute='mtime', reverse=true))[0] }}"
-
-    - name: Show RPM file found
-      ansible.builtin.debug:
-        msg: "Deploying: {{ rpm_file.path }}"
-
-    - name: Copy RPM to target server
-      ansible.builtin.copy:
-        src: "{{ rpm_file.path }}"
+    - name: Copy latest RPM to target server
+      copy:
+        src: "{{ playbook_dir }}/../myapp-latest.rpm"
         dest: /tmp/myapp.rpm
 
-    - name: Install/Upgrade RPM on target server     ← THIS task must exist
-      dnf:
-        name: /tmp/myapp.rpm
-        state: latest
-        disable_gpg_check: yes   
+    - name: Check currently installed version
+      command: rpm -q myapp
+      register: current_version
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Show currently installed version
+      debug:
+        msg: "Currently installed: {{ current_version.stdout | default('Not installed') }}"
+
+    - name: Install or upgrade RPM on target server
+      command: dnf upgrade -y /tmp/myapp.rpm
+      register: dnf_output
+      changed_when: "'Nothing to do' not in dnf_output.stdout"
+
+    - name: Show dnf output
+      debug:
+        msg: "{{ dnf_output.stdout_lines }}"
+
+    - name: Verify new version installed
+      command: rpm -q myapp
+      register: new_version
+      changed_when: false
+
+    - name: Show newly installed version
+      debug:
+        msg: "✅ Now installed: {{ new_version.stdout }}"
+
+    - name: Run the installed application
+      command: /usr/local/bin/myapp.sh
+      register: app_output
+
+    - name: Show application output
+      debug:
+        msg: "{{ app_output.stdout_lines }}"
