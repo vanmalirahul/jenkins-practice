@@ -1,0 +1,6 @@
+- name: Find the built RPM file locally
+  find:
+    paths: "{{ playbook_dir }}/.."
+    patterns: "myapp-*.rpm"
+  delegate_to: localhost
+  register: rpm_file
