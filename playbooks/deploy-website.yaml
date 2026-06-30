@@ -1,5 +1,5 @@
 ---
-- name: Deploy custom website with Nginx
+- name: Deploy custom website with Nginx on RHEL 9
   hosts: webservers
   become: yes
 
@@ -16,7 +16,8 @@
     - name: Install httpd
       dnf:
         name: httpd
-        state: present  
+        state: present
+
     - name: Ensure nginx default web root exists
       file:
         path: /usr/share/nginx/html
@@ -41,20 +42,21 @@
         enabled: yes
 
     - name: Allow HTTP through firewalld
-      firewalld:
-        service: http
-        permanent: yes
-        state: enabled
-        immediate: yes
+      command: firewall-cmd --permanent --add-service=http
+      changed_when: false
 
-    - name: Ensure SELinux allows nginx to serve content
-      sefcontext:
-        target: '/usr/share/nginx/html(/.*)?'
-        setype: httpd_sys_content_t
-        state: present
+    - name: Reload firewalld
+      command: firewall-cmd --reload
+      changed_when: false
+
+    - name: Apply SELinux context for nginx content
+      command: semanage fcontext -a -t httpd_sys_content_t "/usr/share/nginx/html(/.*)?"
+      changed_when: false
+      ignore_errors: yes
 
     - name: Apply SELinux context
       command: restorecon -Rv /usr/share/nginx/html
+      changed_when: false
 
   handlers:
     - name: Restart nginx
