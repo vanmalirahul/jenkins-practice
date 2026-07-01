@@ -1,0 +1,75 @@
+---
+- name: Deploy WAR file to Tomcat on RHEL9
+  hosts: webservers
+  become: yes
+
+  vars:
+    tomcat_webapps: /var/lib/tomcat/webapps
+    war_file: mywebapp.war
+    tomcat_service: tomcat
+
+  tasks:
+    - name: Ensure Java is installed
+      dnf:
+        name: java-17-openjdk
+        state: present
+
+    - name: Ensure Tomcat is installed
+      dnf:
+        name: tomcat
+        state: present
+
+    - name: Ensure Tomcat webapps directory exists
+      file:
+        path: "{{ tomcat_webapps }}"
+        state: directory
+        owner: tomcat
+        group: tomcat
+        mode: '0755'
+
+    - name: Stop Tomcat before deployment
+      service:
+        name: "{{ tomcat_service }}"
+        state: stopped
+      ignore_errors: yes
+
+    - name: Remove old WAR file if exists
+      file:
+        path: "{{ tomcat_webapps }}/{{ war_file }}"
+        state: absent
+
+    - name: Remove old exploded WAR directory if exists
+      file:
+        path: "{{ tomcat_webapps }}/mywebapp"
+        state: absent
+
+    - name: Copy new WAR file to Tomcat webapps
+      copy:
+        src: "{{ playbook_dir }}/../javaapp/target/mywebapp.war"
+        dest: "{{ tomcat_webapps }}/{{ war_file }}"
+        owner: tomcat
+        group: tomcat
+        mode: '0644'
+
+    - name: Start Tomcat after deployment
+      service:
+        name: "{{ tomcat_service }}"
+        state: started
+        enabled: yes
+
+    - name: Allow Tomcat port 8080 through firewalld
+      command: firewall-cmd --permanent --add-port=8080/tcp
+      changed_when: false
+
+    - name: Reload firewalld
+      command: firewall-cmd --reload
+      changed_when: false
+
+    - name: Verify Tomcat is running
+      command: systemctl status tomcat
+      register: tomcat_status
+      changed_when: false
+
+    - name: Show Tomcat status
+      debug:
+        msg: "{{ tomcat_status.stdout_lines }}"
