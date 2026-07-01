@@ -46,7 +46,7 @@
     - name: Copy new WAR file to Tomcat webapps
       copy:
         src: "{{ playbook_dir }}/../javaapp/target/mywebapp.war"
-        dest: "{{ tomcat_webapps }}/{{ war_file }}"
+        dest: "{{ tomcat_webapps }}/mywebapp.war"
         owner: tomcat
         group: tomcat
         mode: '0644'
